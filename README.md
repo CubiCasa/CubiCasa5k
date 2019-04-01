@@ -42,7 +42,7 @@ Different training options can be found in the script file. Tensorboard is not i
 tensorboard --logdir runs_cubi/
 ```
 ## Evaluation
-Our model weights file can be downloaded here. Once the weights file is in the project folder evaluation can be done. Also you can run the jupyter notebook file to see how the model is performing for different floorplans.
+Our model weights file can be downloaded [here](https://drive.google.com/file/d/1gRB7ez1e4H7a9Y09lLqRuna0luZO5VRK/view?usp=sharing). Once the weights file is in the project folder evaluation can be done. Also you can run the jupyter notebook file to see how the model is performing for different floorplans.
 ```bash
 python eval.py --weights model_best_val_loss_var.pkl
 ```
