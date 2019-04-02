@@ -170,7 +170,7 @@ def get_evaluation_tensors(val, model, split, logger, rotate=True, n_classes=44)
 
     all_opening_types = [1, 2]  # Window, Door
     polygons, types, room_polygons, room_types = post_prosessing.get_polygons(
-        (heatmaps, rooms, icons), 0.2, all_opening_types)
+        (heatmaps, rooms, icons), 0.4, all_opening_types)
     logger.info("Prediction post processing done")
 
     predicted_classes = polygons_to_tensor(
