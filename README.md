@@ -1,5 +1,7 @@
 # CubiCasa5K: A Dataset and an Improved Multi-Task Model for Floorplan Image Analysis
 
+Paper: [CubiCasa5K: A Dataset and an Improved Multi-Task Model for Floorplan Image Analysis](https://arxiv.org/abs/1904.01920v1)
+
 ## Multi-Task Model
 The model uses the neural network architecture of previous work [Raster-to-Vector: Revisiting Floorplan Transformation](https://github.com/art-programmer/FloorplanTransformation). We ported the network from Torch to PyTorch. The pre- and post-processing is modified to suit our dataset, but we use some of the same code when possible. Also we use a multi-task uncertainty loss function introduced by [Kendall et al.](https://arxiv.org/abs/1705.07115) An example of the model's result can be found in the samples.ipynb file.
 
