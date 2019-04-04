@@ -15,13 +15,13 @@ docker build -t cubi -f Dockerfile .
 ```
 To start JupyterLab in the container:
 ```bash
-docker run --rm -it --init \\
-  --runtime=nvidia \\
-  --ipc=host \\
-  --publish 1111:1111 \\
-  --user="$(id -u):$(id -g)" \\
-  --volume=$PWD:/app \\
-  -e NVIDIA_VISIBLE_DEVICES=0 \\
+docker run --rm -it --init \
+  --runtime=nvidia \
+  --ipc=host \
+  --publish 1111:1111 \
+  --user="$(id -u):$(id -g)" \
+  --volume=$PWD:/app \
+  -e NVIDIA_VISIBLE_DEVICES=0 \
   cubi jupyter-lab --port 1111 --ip 0.0.0.0 --no-browser
 ```
 You can now open a terminal in [JupyterLab web interface](http://localhost:1111) to execute more commands in the container.
