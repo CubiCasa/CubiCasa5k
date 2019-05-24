@@ -3,7 +3,7 @@
 Paper: [CubiCasa5K: A Dataset and an Improved Multi-Task Model for Floorplan Image Analysis](https://arxiv.org/abs/1904.01920v1)
 
 ## Multi-Task Model
-The model uses the neural network architecture of previous work [Raster-to-Vector: Revisiting Floorplan Transformation](https://github.com/art-programmer/FloorplanTransformation). We ported the network from Torch to PyTorch. The pre- and post-processing is modified to suit our dataset, but we use some of the same code when possible. Also we use a multi-task uncertainty loss function introduced by [Kendall et al.](https://arxiv.org/abs/1705.07115) An example of the model's result can be found in the samples.ipynb file.
+The model uses the neural network architecture presented in [Raster-to-Vector: Revisiting Floorplan Transformation](https://github.com/art-programmer/FloorplanTransformation) [1]. The pre- and post-processing parts are modified to suit our dataset, but otherwise the pipeline follows the torch implementation of [1] as much as possible. Our model utilizes the multi-task uncertainty loss function introduced by [Kendall et al.](https://arxiv.org/abs/1705.07115). An example of the model's result can be found in the samples.ipynb file.
 
 ## Dataset
 CubiCasa5K is a large-scale floorplan image dataset containing 5000 samples annotated into over 80 floorplan object categories. The dataset annotations are performed in a dense and versatile manner by using polygons for separating the different objects. You can download the CubiCasa5K dataset from [here](https://zenodo.org/record/2613548) and extract the zip file to data/ folder.
@@ -49,3 +49,7 @@ Our model weights file can be downloaded [here](https://drive.google.com/file/d/
 python eval.py --weights model_best_val_loss_var.pkl
 ```
 Additional option for evaluation can be found in the script file. The results can be found in runs_cubi/ folder. 
+
+## Todo
+- Modify create_lmdb.py to save files as uint8 (now using float32 which is the main reason why the lmdb file gets as big as over 100 gbytes).
+- Modify augmentations.py to operate with numpy arrays (the reason why it currently utilizes torch tensors is the fact that in our earlier version we applied augmentations to heatmap tensors and not to heatmap dicts which is the correct way to do it)
