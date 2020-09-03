@@ -2,7 +2,7 @@ asn1crypto==0.24.0
 attrs==19.1.0
 backcall==0.1.0
 bleach==3.1.0
-certifi==2018.10.15
+certifi==2019.3.9
 cffi==1.11.5
 chardet==3.0.4
 cloudpickle==0.8.0
@@ -33,8 +33,8 @@ lmdb==0.94
 MarkupSafe==1.1.1
 matplotlib==3.0.3
 mistune==0.8.4
-mkl-fft==1.0.6
-mkl-random==1.0.1
+mkl-fft==1.0.10
+mkl-random==1.0.2
 nbconvert==5.4.1
 nbformat==4.4.0
 networkx==2.2
