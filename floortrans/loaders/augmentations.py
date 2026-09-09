@@ -268,7 +268,7 @@ class RotateNTurns(object):
             t_sorted[:, 2] = t[:, 0]
             t_sorted[:, 3] = t[:, 1]
             t_sorted[:, 0] = t[:, 2]
-            t_sorted[:, 4] = t[:, 3]
+            t_sorted[:, 1] = t[:, 3]
             # L junctions
             t_sorted[:, 6] = t[:, 4]
             t_sorted[:, 7] = t[:, 5]

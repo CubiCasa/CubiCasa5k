@@ -1,11 +1,11 @@
 import numpy as np
-from tensorboardX import SummaryWriter
+from pathlib import Path
 import logging
 import argparse
 import torch
 from datetime import datetime
 from torch.utils import data
-from floortrans.models import get_model
+from floortrans.inference import load_model
 from floortrans.loaders import FloorplanSVG
 from floortrans.loaders.augmentations import DictToTensor, Compose
 from floortrans.metrics import get_evaluation_tensors, runningScore
@@ -42,29 +42,24 @@ def print_res(name, res, cls_names, logger):
 
 def evaluate(args, log_dir, writer, logger):
 
-    normal_set = FloorplanSVG(args.data_path, 'test.txt', format='lmdb', lmdb_folder='cubi_lmdb/', augmentations=Compose([DictToTensor()]))
+    normal_set = FloorplanSVG(str(Path(args.data_path)) + '/', args.split_file, format=args.data_format, lmdb_folder=args.lmdb_folder, augmentations=Compose([DictToTensor()]))
     data_loader = data.DataLoader(normal_set, batch_size=1, num_workers=0)
 
-    checkpoint = torch.load(args.weights)
-    # Setup Model
-    model = get_model(args.arch, 51)
-    n_classes = args.n_classes
+    if args.n_classes != 44:
+        raise ValueError("The trained CubiCasa model uses 44 channels (21 junctions, 12 rooms, 11 icons).")
     split = [21, 12, 11]
-    model.conv4_ = torch.nn.Conv2d(256, n_classes, bias=True, kernel_size=1)
-    model.upsample = torch.nn.ConvTranspose2d(n_classes, n_classes, kernel_size=4, stride=4)
-    model.load_state_dict(checkpoint['model_state'])
-    model.eval()
-    model.cuda()
+    model = load_model(args.weights, args.device, args.arch)
+    logger.info("Inference device: %s", next(model.parameters()).device)
 
     score_seg_room = runningScore(12)
     score_seg_icon = runningScore(11)
     score_pol_seg_room = runningScore(12)
     score_pol_seg_icon = runningScore(11)
-    with torch.no_grad():
+    with torch.inference_mode():
         for count, val in tqdm(enumerate(data_loader), total=len(data_loader),
                                ncols=80, leave=False):
             logger.info(count)
-            things = get_evaluation_tensors(val, model, split, logger, rotate=True)
+            things = get_evaluation_tensors(val, model, split, logger, rotate=args.rotate)
 
             label, segmentation, pol_segmentation = things
 
@@ -88,16 +83,26 @@ if __name__ == '__main__':
     parser.add_argument('--data-path', nargs='?', type=str, default='data/cubicasa5k/',
                         help='Path to data directory')
     parser.add_argument('--n-classes', nargs='?', type=int, default=44,
-                        help='# of the epochs')
-    parser.add_argument('--weights', nargs='?', type=str, default=None,
+                        help='Checkpoint output channels; must be 44')
+    parser.add_argument('--weights', type=Path, required=True,
                         help='Path to previously trained model weights file .pkl')
     parser.add_argument('--log-path', nargs='?', type=str, default='runs_cubi/',
                         help='Path to log directory')
 
+    parser.add_argument('--device', default='auto', help='auto, cpu, cuda or cuda:N')
+    parser.add_argument('--threads', type=int, default=2, help='CPU thread count')
+    parser.add_argument('--rotate', action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument('--data-format', choices=['lmdb', 'txt'], default='lmdb')
+    parser.add_argument('--split-file', default='test.txt')
+    parser.add_argument('--lmdb-folder', default='cubi_lmdb/')
     args = parser.parse_args()
+    if args.threads < 1:
+        parser.error('--threads must be positive')
+    torch.set_num_threads(args.threads)
 
     log_dir = args.log_path + '/' + time_stamp + '/'
-    writer = SummaryWriter(log_dir)
+    Path(log_dir).mkdir(parents=True, exist_ok=True)
+    writer = None  # Kept in evaluate signature for existing callers; no TensorBoard dependency.
     logger = logging.getLogger('eval')
     logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler(log_dir+'/eval.log')

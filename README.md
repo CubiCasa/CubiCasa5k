@@ -1,5 +1,10 @@
 # CubiCasa5K: A Dataset and an Improved Multi-Task Model for Floorplan Image Analysis
 
+> **Modern inference:** use the [Python 3.11 CPU setup and single-image CLI](INFERENCE.md).
+> Device-aware evaluation and a second engine for the existing local interface are
+> available. The original architecture is retained. The requirements and Docker
+> instructions below describe the historical training setup.
+
 Paper: [CubiCasa5K: A Dataset and an Improved Multi-Task Model for Floorplan Image Analysis](https://arxiv.org/abs/1904.01920v1)
 
 ## Multi-Task Model
@@ -8,7 +13,7 @@ The model uses the neural network architecture presented in [Raster-to-Vector: R
 ## Dataset
 CubiCasa5K is a large-scale floorplan image dataset containing 5000 samples annotated into over 80 floorplan object categories. The dataset annotations are performed in a dense and versatile manner by using polygons for separating the different objects. You can download the CubiCasa5K dataset from [here](https://zenodo.org/record/2613548) and extract the zip file to data/ folder.
 
-## Requirements
+## Historical requirements (training)
 The model is written for Python 3.6.5 and Pytorch 1.0.0 with CUDA enabled GPU. Other dependencies Python can be found in requirements.txt file with the exception of cv2 3.1.0 ([OpenCV](https://opencv.org/)). If you want to use the Dockerfile you need to have docker and [nvidia-docker2](https://github.com/NVIDIA/nvidia-docker) installed. We use pre-built image [anibali/pytorch:cuda-9.0](https://github.com/anibali/docker-pytorch) as a starting point and install other required libraries using pip. To create the container run in the:
 ```bash
 docker build -t cubi -f Dockerfile .
@@ -46,7 +51,7 @@ tensorboard --logdir runs_cubi/
 ## Evaluation
 Our model weights file can be downloaded [here](https://drive.google.com/file/d/1gRB7ez1e4H7a9Y09lLqRuna0luZO5VRK/view?usp=sharing). Once the weights file is in the project folder evaluation can be done. Also you can run the jupyter notebook file to see how the model is performing for different floorplans.
 ```bash
-python eval.py --weights model_best_val_loss_var.pkl
+.venv/bin/python eval.py --weights checkpoints/model_best_val_loss_var.pkl --device cpu
 ```
 Additional option for evaluation can be found in the script file. The results can be found in runs_cubi/ folder. 
 

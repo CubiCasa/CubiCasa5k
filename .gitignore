@@ -2,6 +2,12 @@
 .ipynb_checkpoints
 
 __pycache__/
+.venv/
+.bootstrap/
+.pytest_cache/
+checkpoints/
+outputs/
+*.egg-info/
 
 ### Vim ###
 # Swap

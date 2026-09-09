@@ -32,7 +32,7 @@ class FloorplanSVG(Dataset):
 
         self.data_folder = data_folder
         # Load txt file to list
-        self.folders = genfromtxt(data_folder + data_file, dtype='str')
+        self.folders = np.atleast_1d(genfromtxt(data_folder + data_file, dtype='str'))
 
     def __len__(self):
         """__len__"""

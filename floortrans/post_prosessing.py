@@ -5,10 +5,8 @@ import copy
 from itertools import combinations
 from scipy import stats
 from skimage import draw
-from scipy.ndimage import measurements
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from collections.abc import Iterable
 
 
 def get_wall_polygon(wall_heatmaps, room_segmentation, threshold, wall_classes, point_orientations, orientation_ranges):
@@ -329,21 +327,12 @@ def merge_rectangles(rectangles, room_types):
 
             polygon_union = unary_union(same_cls_pols)
 
-            # If there are multiple polygons we split them.
-            if isinstance(polygon_union, Iterable):
-                for pol in polygon_union:
-#                     x, y = pol.boundary.coords.xy
-#                     numpy_pol = np.array([np.array(x), np.array(y)]).T
-#                     room_polygons.append(numpy_pol)
+            # Shapely 2 multipart geometries expose .geoms, not iteration.
+            parts = (polygon_union,) if isinstance(polygon_union, Polygon) else polygon_union.geoms
+            for pol in parts:
+                if isinstance(pol, Polygon) and not pol.is_empty:
                     room_polygons.append(pol)
-                    new_room_types.append(pol_type)
-                    
-            else:
-#                 x, y = polygon_union.boundary.coords.xy
-#                 numpy_pol = np.array([np.array(x), np.array(y)]).T
-#                 room_polygons.append(numpy_pol)
-                room_polygons.append(polygon_union)
-                new_room_types.append(pol_type)
+                    new_room_types.append(pol_type.copy())
 
     return room_polygons, new_room_types
 
@@ -906,7 +895,7 @@ def extract_wall_polygon(wall, wall_points, segmentation, seg_class):
         # widths = reject_outliers(widths)
         # if len(widths) == 0:
             # return None
-        wall_width = stats.mode(widths).mode[0]
+        wall_width = stats.mode(widths, keepdims=True).mode[0]
         if wall_width > y2 - y1:
             wall_width = y2 - y1
         w_delta = int(wall_width / 2.0)
@@ -962,7 +951,7 @@ def extract_wall_polygon(wall, wall_points, segmentation, seg_class):
         # widths = reject_outliers(widths)
         # if len(widths) == 0:
             # return None
-        wall_width = stats.mode(widths).mode[0]
+        wall_width = stats.mode(widths, keepdims=True).mode[0]
         if wall_width > x2 - x1:
             wall_width = x2 - x1
         w_delta = int(wall_width / 2.0)
@@ -1025,9 +1014,9 @@ def split_validation(tensor, shape, split):
     width = shape[1]
     heatmaps, rooms, icons = torch.split(tensor, [split[0], 1, 1], 1)
 
-    heatmaps = F.interpolate(heatmaps, size=shape, mode='bilinear', align_corners=False).squeeze().data.numpy()
-    icons = F.interpolate(icons, size=shape, mode='nearest').squeeze().data.numpy()
-    rooms = F.interpolate(rooms, size=shape, mode='nearest').squeeze().data.numpy()
+    heatmaps = F.interpolate(heatmaps, size=shape, mode='bilinear', align_corners=False).squeeze().detach().cpu().numpy()
+    icons = F.interpolate(icons, size=shape, mode='nearest').squeeze().detach().cpu().numpy()
+    rooms = F.interpolate(rooms, size=shape, mode='nearest').squeeze().detach().cpu().numpy()
 
     rooms_new = np.empty([split[1], height, width], float)
     icons_new = np.empty([split[2], height, width], float)
@@ -1042,15 +1031,15 @@ def split_validation(tensor, shape, split):
 
 
 def split_prediction(tensor, shape, split):
-    tensor = F.interpolate(tensor, size=shape, mode='bilinear', align_corners=False).squeeze()
+    tensor = F.interpolate(tensor, size=shape, mode='bilinear', align_corners=False).squeeze(0)
     heatmaps, rooms, icons = torch.split(tensor, split, 0)
 
     icons = F.softmax(icons, 0)
     rooms = F.softmax(rooms, 0)
 
-    heatmaps = heatmaps.data.numpy()
-    icons = icons.data.numpy()
-    rooms = rooms.data.numpy()
+    heatmaps = heatmaps.detach().cpu().numpy()
+    icons = icons.detach().cpu().numpy()
+    rooms = rooms.detach().cpu().numpy()
 
     return heatmaps, rooms, icons
 

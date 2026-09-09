@@ -9,7 +9,7 @@ import torch
 from torch.nn.functional import sigmoid, softmax, interpolate
 from skimage import draw
 from floortrans import post_prosessing
-from floortrans.loaders.augmentations import RotateNTurns
+from floortrans.inference import predict
 from floortrans.plotting import shp_mask
 
 
@@ -94,10 +94,10 @@ def get_px_acc(pred, target, input_slice, sub=1):
     pred_arr = torch.split(pred, input_slice)
     heatmap_pred, rooms_pred, icons_pred = pred_arr
     rooms_pred = softmax(rooms_pred, 0).argmax(0)
-    rooms_target = target[input_slice[0]].type(torch.cuda.LongTensor) - sub
+    rooms_target = target[input_slice[0]].to(device=pred.device, dtype=torch.long) - sub
     rooms_pos = torch.eq(rooms_pred, rooms_target).sum()
 
-    icons_target = target[input_slice[0]+1].type(torch.cuda.LongTensor) - sub
+    icons_target = target[input_slice[0]+1].to(device=pred.device, dtype=torch.long) - sub
     icons_pred = softmax(icons_pred, 0).argmax(0)
     icons_pos = torch.eq(icons_pred, icons_target).sum()
 
@@ -123,42 +123,19 @@ def polygons_to_tensor(polygons_val, types_val, room_polygons_val, room_types_va
             d = split[0]
         else:
             d = 0
-        jj, ii = draw.polygon(polygons_val[i][:, 1], polygons_val[i][:, 0])
+        jj, ii = draw.polygon(polygons_val[i][:, 1], polygons_val[i][:, 0], shape=size)
         ten[pol_type['class'] + d][jj, ii] = 1
 
     return ten
 
 
 def get_evaluation_tensors(val, model, split, logger, rotate=True, n_classes=44):
-    images_val = val['image'].cuda()
     labels_val = val['label']
-    height = labels_val.shape[2]
-    width = labels_val.shape[3]
+    height, width = labels_val.shape[-2:]
     img_size = (height, width)
-
-    if rotate:
-        rot = RotateNTurns()
-        rotations = [(0, 0), (1, -1), (2, 2), (-1, 1)]
-        pred_count = len(rotations)
-        prediction = torch.zeros([pred_count, n_classes, height, width])
-        for i, r in enumerate(rotations):
-            forward, back = r
-            # We rotate first the image
-            rot_image = rot(images_val, 'tensor', forward)
-            pred = model(rot_image)
-            # We rotate prediction back
-            pred = rot(pred, 'tensor', back)
-            # We fix heatmaps
-            pred = rot(pred, 'points', back)
-            # We make sure the size is correct
-            pred = interpolate(pred, size=(height, width), mode='bilinear', align_corners=True)
-            # We add the prediction to output
-            prediction[i] = pred[0]
-            logger.info("flip: " + str(i))
-
-        prediction = torch.mean(prediction, 0, True)
-    else:
-        prediction = model(images_val)
+    if n_classes != sum(split):
+        raise ValueError("n_classes must match the prediction channel split.")
+    prediction = predict(model, val['image'], size=img_size, rotate=rotate)
 
     heatmaps_val, rooms_val, icons_val = post_prosessing.split_validation(
         labels_val, img_size, split)
@@ -180,4 +157,4 @@ def get_evaluation_tensors(val, model, split, logger, rotate=True, n_classes=44)
     pol_icons = np.argmax(predicted_classes[split[1]:], axis=0)
     
     
-    return labels_val[0, 21:].data.numpy(), np.concatenate(([rooms_seg], [icons_seg]), axis=0), np.concatenate(([pol_rooms], [pol_icons]), axis=0)
+    return labels_val[0, 21:].detach().cpu().numpy(), np.concatenate(([rooms_seg], [icons_seg]), axis=0), np.concatenate(([pol_rooms], [pol_icons]), axis=0)

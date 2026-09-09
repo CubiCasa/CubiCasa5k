@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from floortrans.models import model_1427
+from pathlib import Path
 
 
 class Residual(nn.Module):
@@ -232,8 +232,10 @@ class hg_furukawa_original(nn.Module):
     def init_weights(self):
         # Pre-trained network weights from Human pose estimation via Convolutional Part Heatmap Regression
         # https://www.adrianbulat.com/human-pose-estimation MPII
+        from floortrans.models import model_1427
         model = model_1427.model_1427
-        model.load_state_dict(torch.load('floortrans/models/model_1427.pth'))
+        path = Path(__file__).with_name('model_1427.pth')
+        model.load_state_dict(torch.load(path, map_location='cpu', weights_only=True))
 
         for (src, dst) in zip(model.parameters(), self.parameters()):
             dst[:].data.copy_(src[:].data)
